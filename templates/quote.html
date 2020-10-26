@@ -1,0 +1,19 @@
+{%extends 'layout.html'%}
+{%block title%}Quoted{%endblock%}
+
+{%block main%}
+{%if data%}
+    <p>A share of {{data.name}}({{data.symbol}}) costs ${{data.price}}</p>
+{%else%}
+<form method='POST' action='/quote'>
+    </div>
+    <div class="form-group">
+        <label for="inputEmail4">Symbol</label>
+        <input type="text" name="symbol" class="form-control" id="inputEmail4">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Quote</button>
+  </form>
+  
+  {%endif%}
+{%endblock%}
