@@ -8,6 +8,7 @@ from werkzeug.exceptions import default_exceptions, HTTPException, InternalServe
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from helpers import apology, login_required, lookup, usd
+from datetime import datetime as dt 
 
 # Configure application
 app = Flask(__name__)
@@ -44,8 +45,11 @@ if not os.environ.get("API_KEY"):
 @login_required
 def index():
     """Show portfolio of stocks"""
-    return render_template('home.html')
-
+    row = db.execute('SELECT cash FROM users WHERE id=?', session['user_id'])
+    cash = row[0]['cash']
+    rows = db.execute('SELECT * FROM stock WHERE owner_id=?', session['user_id'])
+    data = {'transactions': rows, 'cash': cash}
+    return render_template('home.html', data=data)
 
 @app.route("/buy", methods=["GET", "POST"])
 @login_required
@@ -54,15 +58,27 @@ def buy():
     if request.method == 'POST':
         user_id = session.get('user_id')
         symbol = request.form.get('symbol')
-        shares = request.form.get('shares')
+        shares = int(request.form.get('shares'))
         if data:=lookup(symbol):
             price = data.get('price')
-            total = price * int(shares)
+            total = price * shares
             name = data.get('name')
             row = db.execute("SELECT cash FROM users WHERE id=?", user_id)
             current_cash = row[0]['cash'] - total
             if current_cash < 0:
-                return apology('invalid ')
+                return apology('insufficient funds')
+            else:
+                if st := db.execute('SELECT * FROM stock WHERE symbol=?', symbol):
+                    shares = st[0]['shares'] + shares
+                    total = round(st[0]['total'] + total, 3)
+                    db.execute('UPDATE stock SET shares=?, total=?, price=? WHERE id=?', shares, total, price, st[0]['id'])
+                else:
+                    db.execute('INSERT INTO stock(symbol, name, price, shares, total, owner_id) VALUES (?,?,?,?,?,?)',
+                    symbol, name, price, shares, total, user_id)
+                db.execute('UPDATE users SET cash=? WHERE id=?', current_cash, user_id)
+                db.execute('INSERT INTO transactions(symbol, shares, price, dt, owner_id) VALUES (?,?,?,?,?)',
+                symbol, shares, price, dt.now(), session.get('user_id'))
+                return redirect('/')
         else:
             return apology('shit happen')
     return render_template("buy.html")
@@ -72,8 +88,8 @@ def buy():
 @login_required
 def history():
     """Show history of transactions"""
-    return apology("TODO")
-
+    transactions = db.execute('SELECT * FROM transactions WHERE owner_id=?', session['user_id'])
+    return render_template('history.html', transactions=transactions)
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -155,7 +171,25 @@ def register():
 @login_required
 def sell():
     """Sell shares of stock"""
-    return apology("TODO")
+    if request.method == 'POST':
+        stock_id = request.form.get('selected_stock')
+        shares = int(request.form.get('shares'))
+        stock = db.execute('SELECT * FROM stock WHERE id=?', stock_id)[0]
+        if stock.get('shares') < shares:
+            return apology('Out of stock soory the maximum quantity is {}'.format(stock.get('shares')), 200)
+        user = db.execute('SELECT cash FROM users WHERE id=?', session['user_id'])
+        new_price = lookup(stock['symbol'])['price']
+        cash = round(new_price * shares + user[0].get('cash'), 3)
+        total = round(stock['total'] - new_price * shares, 3)
+        sh = -shares
+        shares = stock.get('shares') - shares
+        db.execute('UPDATE users SET cash=? WHERE id=?', cash, session['user_id'])
+        db.execute('UPDATE stock SET shares=?, total=? WHERE id=?', shares, total, stock_id)
+        db.execute('INSERT INTO transactions(symbol, shares, price, dt, owner_id) VALUES (?,?,?,?,?)',
+                stock.get('symbol'), sh, stock.get('price'), dt.now(), session.get('user_id'))
+        return redirect('/')
+    rows = db.execute('SELECT id, symbol FROM stock;')
+    return render_template('sell.html', rows=rows)
 
 
 def errorhandler(e):

@@ -5,16 +5,36 @@
 <table class="table">
     <thead>
       <tr>
-        <th scope="col">First</th>
-        <th scope="col">Last</th>
-        <th scope="col">Handle</th>
+        <th scope="col">Symbol</th>
+        <th scope="col">Name</th>
+        <th scope="col">Shares</th>
+        <th scope='col'>Price</th>
+        <th scope='col'>Total</th>
       </tr>
     </thead>
     <tbody>
+      {%for transaction in data.transactions%}
       <tr>
-        <td>Mark</td>
-        <td>Otto</td>
-        <td>@mdo</td>
+          <td>{{transaction.symbol}}</td>
+          <td>{{transaction.name}}</td>
+          <td>{{transaction.shares}}</td>
+          <td>{{transaction.price | usd}}</td>
+          <td>{{transaction.total | usd}}</td>
+      </tr>
+      {%endfor%}
+      <tr class="table-active">
+        <td>CASH</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>{{data.cash | usd}}</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>{{data.cash | usd}}</td>
       </tr>
     </tbody>
   </table>

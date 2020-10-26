@@ -1,0 +1,17 @@
+{%extends 'layout.html'%}
+{%block title%}Sell{%endblock%}
+{%block main%}
+<form action="/sell" method="post">
+    <div class="form-group">
+        <select class="form-control" name='selected_stock'>
+            {%for row in rows%}
+            <option value='{{row.id}}'>{{row.symbol}}</option>  
+            {%endfor%}
+          </select>
+    </div>
+    <div class="form-group">
+        <input class="form-control"  value='1' name='shares' min="1" placeholder="shares" type="number">
+    </div>
+    <button class="btn btn-primary" type="submit">Sell</button>
+</form>
+{%endblock%}
