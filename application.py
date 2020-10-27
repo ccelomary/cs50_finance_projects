@@ -68,7 +68,7 @@ def buy():
             if current_cash < 0:
                 return apology('insufficient funds')
             else:
-                if st := db.execute('SELECT * FROM stock WHERE symbol=?', symbol):
+                if st := db.execute('SELECT * FROM stock WHERE symbol=? AND owner_id=?', symbol, user_id):
                     shares = st[0]['shares'] + shares
                     total = round(st[0]['total'] + total, 3)
                     db.execute('UPDATE stock SET shares=?, total=?, price=? WHERE id=?', shares, total, price, st[0]['id'])
@@ -80,7 +80,7 @@ def buy():
                 symbol, shares, price, dt.now(), session.get('user_id'))
                 return redirect('/')
         else:
-            return apology('shit happen')
+            return apology('INVALID SYMBOL!')
     return render_template("buy.html")
 
 
@@ -119,7 +119,6 @@ def login():
 
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
-        print(session)
         # Redirect user to home page
         return redirect("/")
 
@@ -188,7 +187,7 @@ def sell():
         db.execute('INSERT INTO transactions(symbol, shares, price, dt, owner_id) VALUES (?,?,?,?,?)',
                 stock.get('symbol'), sh, stock.get('price'), dt.now(), session.get('user_id'))
         return redirect('/')
-    rows = db.execute('SELECT id, symbol FROM stock;')
+    rows = db.execute('SELECT id, symbol FROM stock WHERE owner_id=?;', session['user_id'])
     return render_template('sell.html', rows=rows)
 
 

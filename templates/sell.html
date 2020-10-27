@@ -4,6 +4,7 @@
 <form action="/sell" method="post">
     <div class="form-group">
         <select class="form-control" name='selected_stock'>
+            <option disabled>SYMBOL</option>
             {%for row in rows%}
             <option value='{{row.id}}'>{{row.symbol}}</option>  
             {%endfor%}
