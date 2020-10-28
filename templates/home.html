@@ -2,7 +2,7 @@
 {%block title%}Portfolio{%endblock%}
 
 {%block main%}
-<table class="table">
+<table class="table table-striped">
     <thead>
       <tr>
         <th scope="col">Symbol</th>
@@ -22,20 +22,19 @@
           <td>{{transaction.total | usd}}</td>
       </tr>
       {%endfor%}
-      <tr class="table-active">
+      <tr>
         <td>CASH</td>
         <td></td>
         <td></td>
         <td></td>
         <td>{{data.cash | usd}}</td>
       </tr>
-      <tr>
-        <td></td>
-        <td></td>
-        <td></td>
-        <td></td>
-        <td>{{data.cash | usd}}</td>
-      </tr>
     </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="4"></td>
+        <td class="font-weight-bold">{{data.total | usd}}</td>
+      </tr>
+    </tfoot>
   </table>
 {%endblock%}

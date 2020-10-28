@@ -4,8 +4,10 @@ import urllib.parse
 
 from flask import redirect, render_template, request, session
 from functools import wraps
+import re
 
 
+    
 def apology(message, code=400):
     """Render message as an apology to user."""
     def escape(s):
@@ -61,3 +63,8 @@ def lookup(symbol):
 def usd(value):
     """Format value as USD."""
     return f"${value:,.2f}"
+
+
+def check_length(field):
+    if len(field[1]) < 5:
+        return "size of  \"{}\" should be greater than or equal to 5".format(field[0])

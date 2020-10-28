@@ -7,7 +7,7 @@ from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from helpers import apology, login_required, lookup, usd
+from helpers import apology, check_length, login_required, lookup, usd, check_length
 from datetime import datetime as dt 
 
 # Configure application
@@ -48,7 +48,8 @@ def index():
     row = db.execute('SELECT cash FROM users WHERE id=?', session['user_id'])
     cash = row[0]['cash']
     rows = db.execute('SELECT * FROM stock WHERE owner_id=?', session['user_id'])
-    data = {'transactions': rows, 'cash': cash}
+    total =  cash + sum((row['total'] for row in rows))
+    data = {'transactions': rows, 'cash': cash, 'total': total}
     return render_template('home.html', data=data)
 
 @app.route("/buy", methods=["GET", "POST"])
@@ -78,6 +79,7 @@ def buy():
                 db.execute('UPDATE users SET cash=? WHERE id=?', current_cash, user_id)
                 db.execute('INSERT INTO transactions(symbol, shares, price, dt, owner_id) VALUES (?,?,?,?,?)',
                 symbol, shares, price, dt.now(), session.get('user_id'))
+                flash("Bought!")
                 return redirect('/')
         else:
             return apology('INVALID SYMBOL!')
@@ -152,6 +154,10 @@ def register():
     """Register user"""
     if request.method == 'POST':
         data = dict((field.split('=') for field in request.get_data().decode().split('&')))
+        if msg:=check_length(('username', data['username'])):
+            return apology(msg)
+        if msg:=check_length(('password', data['password'])):
+            return apology(msg)
         for key, value in data.items():
             if not value:
                 return apology("you must provide {} field".format(key), 403)
@@ -162,6 +168,7 @@ def register():
         except RuntimeError:
             return apology('username is already used!', 403)
         session['user_id'] = id_
+        flash("Registred!")
         return redirect('/')
     return render_template('register.html')
 
@@ -173,7 +180,11 @@ def sell():
     if request.method == 'POST':
         stock_id = request.form.get('selected_stock')
         shares = int(request.form.get('shares'))
+        if not stock_id:
+            return apology('you should select valid symbol')
         stock = db.execute('SELECT * FROM stock WHERE id=?', stock_id)[0]
+        if shares < 1:
+            return apology("number of shares should not be negative")
         if stock.get('shares') < shares:
             return apology('Out of stock soory the maximum quantity is {}'.format(stock.get('shares')), 200)
         user = db.execute('SELECT cash FROM users WHERE id=?', session['user_id'])
@@ -186,6 +197,7 @@ def sell():
         db.execute('UPDATE stock SET shares=?, total=? WHERE id=?', shares, total, stock_id)
         db.execute('INSERT INTO transactions(symbol, shares, price, dt, owner_id) VALUES (?,?,?,?,?)',
                 stock.get('symbol'), sh, stock.get('price'), dt.now(), session.get('user_id'))
+        flash("Sold!")
         return redirect('/')
     rows = db.execute('SELECT id, symbol FROM stock WHERE owner_id=?;', session['user_id'])
     return render_template('sell.html', rows=rows)
